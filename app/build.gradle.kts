@@ -18,7 +18,7 @@ android {
         resourceConfigurations += listOf("zh", "en")
 
         // 更新检查读取的 GitHub 仓库（发布脚本会用同一对值）
-        buildConfigField("String", "REPO_OWNER", "\"Smartre97\"")
+        buildConfigField("String", "REPO_OWNER", "\"LanFeng97\"")
         buildConfigField("String", "REPO_NAME", "\"remind-widget\"")
     }
 

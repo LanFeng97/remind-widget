@@ -16,3 +16,6 @@ dev-tools/shots/
 # 绯荤粺
 .DS_Store
 Thumbs.db
+
+# 发布包只放 Release，不进版本库
+RemindWidget-*.apk
