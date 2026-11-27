@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose 自己管主题，Activity 只需要一个无 ActionBar 的壳 + 透明状态栏 -->
+    <style name="Theme.RemindWidget" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">#FFF7F8FA</item>
+    </style>
+</resources>

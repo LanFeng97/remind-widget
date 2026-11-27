@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#FF6A00</color>
+
+    <!-- 小组件配色：日间。夜间的同名值在 values-night/colors.xml -->
+    <color name="w_card">#FFFFFF</color>
+    <color name="w_text">#141517</color>
+    <color name="w_text_sub">#8A8F98</color>
+    <color name="w_text_weak">#B8BDC5</color>
+    <color name="w_dot_empty">#D8DCE2</color>
+    <color name="w_header">#8A8F98</color>
+    <color name="w_divider">#F0F1F4</color>
+</resources>

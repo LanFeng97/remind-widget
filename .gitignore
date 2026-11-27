@@ -1,0 +1,18 @@
+# Gradle / Android
+*.iml
+.gradle/
+local.properties
+.idea/
+build/
+app/build/
+captures/
+.externalNativeBuild
+.cxx
+
+# 本机开发脚本跑出来的截图与日志，不进版本库
+dev-tools/shots/
+*.log
+
+# 系统
+.DS_Store
+Thumbs.db

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 深色下的小组件配色。RemoteViews 的布局在宿主（桌面）进程 inflate，
+     会自动按系统夜间模式解析同名 @color，所以这里只需要给值，不用改代码。 -->
+<resources>
+    <color name="w_card">#1A1C1F</color>
+    <color name="w_text">#F2F3F5</color>
+    <color name="w_text_sub">#8B9099</color>
+    <color name="w_text_weak">#6B7078</color>
+    <color name="w_dot_empty">#3C4148</color>
+    <color name="w_header">#8B9099</color>
+    <color name="w_divider">#2C3036</color>
+</resources>
