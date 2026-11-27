@@ -97,6 +97,25 @@ app/src/main/java/com/remind/widget/
 
 改动调度语义只需要看 `Schedule.kt` 和 `DayPlan.kt` 两个文件。
 
+## 应用内更新
+
+设置页顶部显示当前版本（如 `v1.1.1 (3)`），下面是更新卡：
+
+- App 启动时**静默检查**一次（12 小时节流），有新版本时首页齿轮右上角亮红点
+- 手动「检查更新」会拉取本仓库 latest release 的说明和包大小
+- 点「下载并安装」→ 下载 APK → 自动拉起系统安装器（首次需允许「安装未知应用」）
+
+发新版：
+
+```powershell
+# 1. 改 app/build.gradle.kts 的 versionCode / versionName
+.\dev-tools\build.ps1
+Copy-Item app\build\outputs\apk\debug\app-debug.apk .\RemindWidget-v1.x.x.apk
+gh release create v1.x.x .\RemindWidget-v1.x.x.apk --title "v1.x.x" --notes "改了什么"
+```
+
+App 只认 `releases/latest`，不需要改代码。
+
 ## 已知平台限制
 
 **「右滑看已完成」改成了点右上角切换。**
