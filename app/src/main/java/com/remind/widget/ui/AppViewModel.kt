@@ -68,14 +68,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------- 更新 ----------
+    private val appPrefs = app.getSharedPreferences("remind_prefs", android.content.Context.MODE_PRIVATE)
+
     private val _updateState = kotlinx.coroutines.flow.MutableStateFlow<UpdateState>(UpdateState.Idle)
     val updateState: StateFlow<UpdateState> = _updateState
 
-    fun checkUpdate() {
+    fun checkUpdate(force: Boolean = false) {
         if (_updateState.value is UpdateState.Checking) return
+        // 启动时的自动检查做节流：12 小时内不重复打 GitHub API；手动点不受限制
+        if (!force) {
+            val last = appPrefs.getLong(KEY_LAST_UPDATE_CHECK, 0L)
+            if (System.currentTimeMillis() - last < 12 * 60 * 60 * 1000L) return
+        }
         _updateState.value = UpdateState.Checking
         viewModelScope.launch {
-            _updateState.value = when (val r = UpdateChecker.checkLatest()) {
+            val r = UpdateChecker.checkLatest()
+            appPrefs.edit().putLong(KEY_LAST_UPDATE_CHECK, System.currentTimeMillis()).apply()
+            _updateState.value = when (r) {
                 is UpdateChecker.CheckResult.Available -> UpdateState.Available(r.info)
                 UpdateChecker.CheckResult.UpToDate -> UpdateState.UpToDate
                 is UpdateChecker.CheckResult.Failed -> UpdateState.Failed(r.message)
@@ -117,6 +126,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     companion object {
+        private const val KEY_LAST_UPDATE_CHECK = "last_update_check"
+
         /** 新建事件时的默认值：每天 09:00 */
         fun defaultEvent(groupId: Long, sortOrder: Int) = Event(
             groupId = groupId,

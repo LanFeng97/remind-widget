@@ -2,18 +2,17 @@
 <!--
   4x2 小组件声明。
 
-  尺寸这块踩过坑：v1.0 用的是老标准 minWidth=250dp / minHeight=110dp（按 70dp 一格算），
-  小米 HyperOS 的格子更大，判定下来不足 2 格高，组件就被藏进了"不适用"分类里，
-  用户在小部件列表里根本找不到。
-
-  现在按更宽的规格给：
-    · minWidth=320dp / minHeight=160dp —— 覆盖 Pixel、HyperOS、ColorOS 的常见格子尺寸
-    · targetCellWidth/Height=4/2 —— API 31+ 的精确格数声明，HyperOS 会优先用它
-    · previewImage —— 部分 ROM 只展示带预览图的三方组件
+  尺寸踩过的坑，记在这里避免以后再试错：
+   · Google 系的 Launcher 按老公式算格数：格数 ≈ (minWidth + 30) / 70，所以 4x2 = 250x110dp。
+     给到 160dp 高，Pixel 会排成 4x3（多出一格空白），不是我们要的 4x2。
+   · Android 12+ 的 targetCellWidth/targetCellHeight 才是精确格数声明，HyperOS / ColorOS 优先读它。
+     两套值一起给：老 ROM 走 dp 公式，新 ROM 走 targetCell。
+   · v1.0 在小米上"小部件列表里找不到"，最可能的原因是缺 previewImage ——
+     部分 ROM 只展示带预览图的三方组件。现在补上了。
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="320dp"
-    android:minHeight="160dp"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
     android:targetCellWidth="4"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"

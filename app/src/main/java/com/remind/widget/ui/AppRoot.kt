@@ -33,6 +33,11 @@ fun AppRoot(initialGroupId: Long = -1L) {
 
     var screen by remember { mutableStateOf<Screen>(Screen.Home) }
 
+    val updateState by vm.updateState.collectAsStateWithLifecycle()
+
+    // 启动时静默检查一次更新（内部有 12 小时节流），有新版就在首页齿轮旁点个红点
+    LaunchedEffect(Unit) { vm.checkUpdate() }
+
     // 从通知 / 小组件点进来：直接进对应栏目
     LaunchedEffect(initialGroupId, groups.size) {
         if (initialGroupId > 0 && groups.any { it.id == initialGroupId }) {
@@ -66,6 +71,7 @@ fun AppRoot(initialGroupId: Long = -1L) {
             groups = groups,
             events = events,
             doneToday = doneToday,
+            hasUpdate = updateState is UpdateState.Available,
             onOpenGroup = { screen = Screen.Edit(it) },
             onOpenSettings = { screen = Screen.Settings },
             onCreateGroup = { name, color, onCreated ->

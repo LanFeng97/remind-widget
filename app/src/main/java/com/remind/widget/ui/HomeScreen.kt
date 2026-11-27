@@ -62,6 +62,7 @@ fun HomeScreen(
     groups: List<Group>,
     events: List<Event>,
     doneToday: List<DoneRecord>,
+    hasUpdate: Boolean,
     onOpenGroup: (Long) -> Unit,
     onOpenSettings: () -> Unit,
     onCreateGroup: (String, Long, () -> Unit) -> Unit,
@@ -110,12 +111,25 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = onOpenSettings) {
-                    Icon(
-                        Icons.Outlined.Settings,
-                        contentDescription = "设置",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                // 齿轮 + 更新红点：发现新版本时在图标右上角点一个小圆点
+                Box {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            Icons.Outlined.Settings,
+                            contentDescription = if (hasUpdate) "设置（有新版本）" else "设置",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (hasUpdate) {
+                        Box(
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 7.dp, end = 9.dp)
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(AccentOrange)
+                        )
+                    }
                 }
             }
 
