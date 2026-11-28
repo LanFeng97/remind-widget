@@ -124,4 +124,26 @@ sealed class WidgetRow {
     data class DoneHeader(val count: Int) : WidgetRow() {
         override val key = "dh"
     }
+
+    /**
+     * 左侧栏目的切换项（左右分栏布局）。
+     * selected 由 SharedPreferences 里每个 widget 的选中栏目决定。
+     */
+    data class GroupTab(
+        val groupId: Long,
+        val name: String,
+        val color: Long,
+        val dueCount: Int,
+        val selected: Boolean
+    ) : WidgetRow() {
+        override val key = "gt-$groupId"
+    }
+
+    /** 左侧的「已完成」入口，永远排在栏目下面 */
+    data class DoneTab(
+        val count: Int,
+        val selected: Boolean
+    ) : WidgetRow() {
+        override val key = "gt-done"
+    }
 }

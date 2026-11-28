@@ -2,6 +2,7 @@ package com.remind.widget.widget
 
 import android.content.Context
 import android.content.Intent
+import android.view.View
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import com.remind.widget.R
@@ -10,7 +11,11 @@ import com.remind.widget.receiver.WidgetActionReceiver
 import kotlinx.coroutines.runBlocking
 
 /**
- * 给两个 ListView 供数据的 Service。
+ * 给左右两个 ListView 供数据。
+ *
+ * · which=groups  → 左侧：栏目切换项 + 「已完成」
+ * · which=content → 右侧：当前选中栏目的时间项，或今天的完成记录
+ *
  * onDataSetChanged() 在 Binder 线程执行，允许同步查库，所以这里用 runBlocking 是标准做法。
  */
 class WidgetListService : RemoteViewsService() {
@@ -20,8 +25,8 @@ class WidgetListService : RemoteViewsService() {
 
     companion object {
         const val EXTRA_WHICH = "which"
-        const val WHICH_TODO = "todo"
-        const val WHICH_DONE = "done"
+        const val WHICH_GROUPS = "groups"
+        const val WHICH_CONTENT = "content"
     }
 
     private class ListFactory(
@@ -30,17 +35,18 @@ class WidgetListService : RemoteViewsService() {
     ) : RemoteViewsFactory {
 
         private var rows: List<WidgetRow> = emptyList()
-        private val which: String = intent.getStringExtra(EXTRA_WHICH) ?: WHICH_TODO
+        private val which: String = intent.getStringExtra(EXTRA_WHICH) ?: WHICH_CONTENT
+        private val widgetId: Int =
+            intent.getIntExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
 
         override fun onCreate() = Unit
 
-        /** 列表加载中的占位视图，返回 null 表示不显示（数据来自本地库，没什么可等的） */
         override fun getLoadingView(): RemoteViews? = null
 
         override fun onDataSetChanged() {
             rows = runBlocking {
-                val data = WidgetUpdater.compute(context)
-                if (which == WHICH_DONE) data.doneRows else data.todoRows
+                val data = WidgetUpdater.compute(context, widgetId)
+                if (which == WHICH_GROUPS) data.groupRows else data.contentRows
             }
         }
 
@@ -52,69 +58,91 @@ class WidgetListService : RemoteViewsService() {
 
         override fun getViewAt(position: Int): RemoteViews {
             val row = rows.getOrNull(position)
-                ?: return RemoteViews(context.packageName, R.layout.widget_item_event)
+                ?: return RemoteViews(context.packageName, R.layout.widget_item_event_simple)
             return when (row) {
-                is WidgetRow.Header -> headerView(row)
+                is WidgetRow.GroupTab -> groupTabView(row)
+                is WidgetRow.DoneTab -> doneTabView(row)
                 is WidgetRow.EventRow -> eventView(row)
-                is WidgetRow.DoneHeader -> doneHeaderView(row)
                 is WidgetRow.DoneRow -> doneRowView(row)
+                is WidgetRow.DoneHeader -> headerView(
+                    WidgetRow.Header(0, "今日已完成", 0xFF9AA0A8, 0, row.count)
+                )
+                is WidgetRow.Header -> headerView(row)
             }
         }
 
-        /** 取颜色资源（深色模式由 values-night 自动换值） */
         private fun c(id: Int): Int = androidx.core.content.ContextCompat.getColor(context, id)
 
-        private fun headerView(row: WidgetRow.Header): RemoteViews {
-            val rv = RemoteViews(context.packageName, R.layout.widget_item_header)
-            rv.setTextViewText(R.id.ih_name, row.name)
-            rv.setTextViewText(
-                R.id.ih_count,
-                if (row.dueCount > 0) "${row.dueCount} 项到点" else "${row.totalCount} 项"
-            )
-            val due = row.dueCount > 0
-            // 圆点用 ● 字符上色（setBackgroundColor 只能给方块，圆角在集合项里没有 tint 通道）
-            rv.setTextColor(R.id.ih_dot, row.color.toInt())
-            rv.setTextColor(
-                R.id.ih_name,
-                if (due) row.color.toInt() else c(R.color.w_text)
-            )
-            rv.setTextColor(
-                R.id.ih_count,
-                if (due) row.color.toInt() else c(R.color.w_text_sub)
-            )
-            // 点栏目名 → 打开 App 并定位到该栏目
+        // ---------------- 左侧：栏目切换项 ----------------
+
+        private fun groupTabView(row: WidgetRow.GroupTab): RemoteViews {
+            val rv = RemoteViews(context.packageName, R.layout.widget_item_group)
+            rv.setTextViewText(R.id.ig_name, row.name)
+
+            if (row.selected) {
+                // 选中：左侧竖条用栏目色 + 名称加粗
+                rv.setInt(R.id.ig_bar, "setBackgroundColor", row.color.toInt())
+                rv.setTextColor(R.id.ig_name, row.color.toInt())
+                rv.setTextViewTextSize(R.id.ig_name, android.util.TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            } else {
+                rv.setInt(R.id.ig_bar, "setBackgroundColor", android.graphics.Color.TRANSPARENT)
+                rv.setTextColor(R.id.ig_name, c(R.color.w_text_sub))
+                rv.setTextViewTextSize(R.id.ig_name, android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+            }
+
+            // 该栏目有到点未完成的项，右侧点一个小圆点
+            if (row.dueCount > 0) {
+                rv.setViewVisibility(R.id.ig_due, View.VISIBLE)
+                rv.setTextColor(R.id.ig_due, row.color.toInt())
+            } else {
+                rv.setViewVisibility(R.id.ig_due, View.GONE)
+            }
+
             val fill = Intent().apply {
                 putExtra(WidgetActionReceiver.EXTRA_GROUP_ID, row.groupId)
+                putExtra(WidgetActionReceiver.EXTRA_WIDGET_ID, widgetId)
             }
-            rv.setOnClickFillInIntent(R.id.ih_root, fill)
+            rv.setOnClickFillInIntent(R.id.ig_root, fill)
             return rv
         }
 
+        private fun doneTabView(row: WidgetRow.DoneTab): RemoteViews {
+            val rv = RemoteViews(context.packageName, R.layout.widget_item_group)
+            rv.setTextViewText(R.id.ig_name, "已完成")
+            if (row.selected) {
+                rv.setInt(R.id.ig_bar, "setBackgroundColor", c(R.color.w_text_sub))
+                rv.setTextColor(R.id.ig_name, c(R.color.w_text))
+                rv.setTextViewTextSize(R.id.ig_name, android.util.TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            } else {
+                rv.setInt(R.id.ig_bar, "setBackgroundColor", android.graphics.Color.TRANSPARENT)
+                rv.setTextColor(R.id.ig_name, c(R.color.w_text_sub))
+                rv.setTextViewTextSize(R.id.ig_name, android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+            }
+            rv.setViewVisibility(R.id.ig_due, View.GONE)
+
+            val fill = Intent().apply {
+                putExtra(WidgetActionReceiver.EXTRA_GROUP_ID, -1L)
+                putExtra(WidgetActionReceiver.EXTRA_WIDGET_ID, widgetId)
+            }
+            rv.setOnClickFillInIntent(R.id.ig_root, fill)
+            return rv
+        }
+
+        // ---------------- 右侧：事件 / 已完成 ----------------
+
         private fun eventView(row: WidgetRow.EventRow): RemoteViews {
-            val rv = RemoteViews(context.packageName, R.layout.widget_item_event)
+            val rv = RemoteViews(context.packageName, R.layout.widget_item_event_simple)
             rv.setTextViewText(R.id.ie_time, row.timeText)
             rv.setTextViewText(R.id.ie_name, row.name)
-            rv.setTextViewText(R.id.ie_rule, row.ruleText)
             rv.setTextColor(R.id.ie_name, c(R.color.w_text))
             rv.setTextColor(R.id.ie_time, if (row.due) row.color.toInt() else c(R.color.w_text_sub))
             rv.setTextColor(R.id.ie_dot, if (row.due) row.color.toInt() else c(R.color.w_dot_empty))
             rv.setTextViewText(R.id.ie_dot, if (row.due) "●" else "○")
-            // 点击 → 划线样式由下一次刷新反映（立即记账，不做本地动画：RemoteViews 没有逐帧能力）
+
             val fill = Intent().apply {
                 putExtra(WidgetActionReceiver.EXTRA_EVENT_ID, row.eventId)
             }
             rv.setOnClickFillInIntent(R.id.ie_root, fill)
-            return rv
-        }
-
-        private fun doneHeaderView(row: WidgetRow.DoneHeader): RemoteViews {
-            val rv = RemoteViews(context.packageName, R.layout.widget_item_header)
-            rv.setTextViewText(R.id.ih_name, "今日已完成")
-            rv.setTextViewText(R.id.ih_count, "${row.count} 项")
-            rv.setTextColor(R.id.ih_name, c(R.color.w_text))
-            rv.setTextColor(R.id.ih_count, c(R.color.w_text_sub))
-            // 已完成页的标题不带栏目色点，避免和下面的 ✓ 行视觉打架
-            rv.setViewVisibility(R.id.ih_dot, android.view.View.GONE)
             return rv
         }
 
@@ -128,11 +156,22 @@ class WidgetListService : RemoteViewsService() {
                 R.id.id_name, "setPaintFlags",
                 android.graphics.Paint.STRIKE_THRU_TEXT_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG
             )
-            // 已完成行故意不做点击动作：这一页是"回看"，误触就撤销反而危险
+            // 已完成行故意不做点击动作：这一页是回看，误触就撤销反而危险
             return rv
         }
 
-        override fun getViewTypeCount(): Int = 4
+        /** 兼容旧布局的栏目头（左右分栏后基本不再用到） */
+        private fun headerView(row: WidgetRow.Header): RemoteViews {
+            val rv = RemoteViews(context.packageName, R.layout.widget_item_header)
+            rv.setTextViewText(R.id.ih_name, row.name)
+            rv.setTextViewText(R.id.ih_count, "${row.totalCount} 项")
+            rv.setTextColor(R.id.ih_name, c(R.color.w_text))
+            rv.setTextColor(R.id.ih_count, c(R.color.w_text_sub))
+            rv.setTextColor(R.id.ih_dot, row.color.toInt())
+            return rv
+        }
+
+        override fun getViewTypeCount(): Int = 5
 
         override fun getItemId(position: Int): Long =
             rows.getOrNull(position)?.key?.hashCode()?.toLong() ?: position.toLong()

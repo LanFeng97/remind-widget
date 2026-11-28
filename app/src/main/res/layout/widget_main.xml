@@ -1,32 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  4x2 桌面小组件根布局。
+  4x2 桌面小组件根布局 —— 左右分栏版。
+
+  结构：
+    顶部状态条（X 项到点）
+    左侧 76dp：栏目列表，点击切换；最后一项是「已完成」
+    右侧剩余：选中栏目的时间项（或已完成记录）
+
   RemoteViews 的两条硬限制决定了这个结构：
-   1. 纵向滚动只能用集合视图（ListView）。ScrollView 在桌面上收不到拖动事件。
-   2. Android 15 起 RemoteViews 的白名单里已经没有 HorizontalScrollView
-      （实测 InflateException: Class not allowed to be inflated android.widget.HorizontalScrollView），
-      所以"横滑翻页"这条路在平台层就不通。
-      改为：两个 ListView 叠在同一个 FrameLayout 里，靠 setViewVisibility 切页，
-      顶部右侧的小按钮就是切页入口。
+   1. 纵向滚动只能用集合视图（ListView），ScrollView 收不到拖动事件
+   2. Android 15 起 HorizontalScrollView 已从白名单移除（InflateException），
+      所以「横向滑动翻页」这条路彻底不通 —— 改成本布局的「点击左侧切换」
+   两个 ListView 并排放在同一个 LinearLayout 里是允许的（不是嵌套，是并列）。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_bg"
-    android:paddingStart="11dp"
-    android:paddingEnd="11dp"
+    android:paddingStart="8dp"
+    android:paddingEnd="10dp"
     android:paddingTop="7dp"
     android:paddingBottom="6dp">
 
-    <!-- 顶部状态条：整条点击进 App；右侧小字切页 -->
+    <!-- 顶部状态条：整条点击进 App -->
     <LinearLayout
         android:id="@+id/w_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingBottom="1dp">
+        android:paddingStart="3dp"
+        android:paddingBottom="3dp">
 
         <TextView
             android:id="@+id/w_header_text"
@@ -38,37 +43,46 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:text="今日待办" />
-
-        <TextView
-            android:id="@+id/w_page_switch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="9.5sp"
-            android:textColor="@color/w_text_sub"
-            android:paddingStart="8dp"
-            android:paddingEnd="2dp"
-            android:paddingTop="2dp"
-            android:paddingBottom="3dp"
-            android:text="已完成 ›" />
     </LinearLayout>
 
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:orientation="horizontal">
 
-        <!-- ============ 页 1：待办 ============ -->
-        <LinearLayout
-            android:id="@+id/w_page_todo"
-            android:layout_width="match_parent"
+        <!-- ============ 左：栏目切换 ============ -->
+        <ListView
+            android:id="@+id/w_group_list"
+            android:layout_width="76dp"
             android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:scrollbars="none"
+            android:listSelector="@android:color/transparent"
+            android:cacheColorHint="@android:color/transparent"
+            android:overScrollMode="never"
+            android:paddingEnd="2dp" />
+
+        <!-- 竖向分隔线：RemoteViews 不允许裸 View，用空 TextView 当色块 -->
+        <TextView
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp"
+            android:background="@color/w_divider" />
+
+        <!-- ============ 右：当前栏目的事件 ============ -->
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:paddingStart="8dp">
 
             <ListView
-                android:id="@+id/w_todo_list"
+                android:id="@+id/w_content_list"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
+                android:layout_height="match_parent"
                 android:divider="@null"
                 android:dividerHeight="0dp"
                 android:scrollbars="none"
@@ -77,43 +91,13 @@
                 android:overScrollMode="never" />
 
             <TextView
-                android:id="@+id/w_todo_empty"
+                android:id="@+id/w_content_empty"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:textSize="11sp"
-                android:textColor="@color/w_text_sub"
+                android:textColor="@color/w_text_weak"
                 android:text="今天都完成了 🎉" />
-        </LinearLayout>
-
-        <!-- ============ 页 2：已完成 ============ -->
-        <LinearLayout
-            android:id="@+id/w_page_done"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <ListView
-                android:id="@+id/w_done_list"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:divider="@null"
-                android:dividerHeight="0dp"
-                android:scrollbars="none"
-                android:listSelector="@android:color/transparent"
-                android:cacheColorHint="@android:color/transparent"
-                android:overScrollMode="never" />
-
-            <TextView
-                android:id="@+id/w_done_empty"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:textSize="11sp"
-                android:textColor="@color/w_text_sub"
-                android:text="还没有完成记录" />
-        </LinearLayout>
-    </FrameLayout>
+        </FrameLayout>
+    </LinearLayout>
 </LinearLayout>

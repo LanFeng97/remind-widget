@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  左侧栏目切换项。
+  选中态（代码里动态设）：
+    · 左侧 3dp 竖条显示为栏目色
+    · 名称加粗、用主文字色
+    · 背景加一层极浅的栏目色
+  未选中：竖条透明、名称常规灰度
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ig_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp"
+    android:paddingStart="2dp"
+    android:paddingEnd="2dp">
+
+    <!-- 选中指示条：RemoteViews 不允许裸 View，用空 TextView 当色块 -->
+    <TextView
+        android:id="@+id/ig_bar"
+        android:layout_width="3dp"
+        android:layout_height="15dp"
+        android:layout_marginEnd="5dp"
+        android:background="@android:color/transparent" />
+
+    <TextView
+        android:id="@+id/ig_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="12sp"
+        android:textColor="@color/w_text_sub"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="吃药" />
+
+    <!-- 到点小红点，未到点时隐藏 -->
+    <TextView
+        android:id="@+id/ig_due"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="3dp"
+        android:textSize="7sp"
+        android:textColor="#FF6A00"
+        android:includeFontPadding="false"
+        android:visibility="gone"
+        android:text="●" />
+</LinearLayout>

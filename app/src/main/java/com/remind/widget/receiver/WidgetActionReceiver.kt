@@ -62,14 +62,32 @@ class WidgetActionReceiver : BroadcastReceiver() {
             }
 
             ACTION_TOGGLE_PAGE -> {
+                // 左右分栏后不再需要翻页，这个动作保留只为兼容已发布版本发出过的 PendingIntent
                 val widgetId = intent.getIntExtra(EXTRA_WIDGET_ID, -1)
                 if (widgetId < 0) return
-                val target = intent.getIntExtra(EXTRA_PAGE, 0)
-                WidgetUpdater.setPage(appContext, widgetId, target)
+                WidgetUpdater.resetWidget(appContext, widgetId)
                 val pending = goAsync()
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         WidgetUpdater.refreshWidget(appContext, widgetId)
+                    } finally {
+                        pending.finish()
+                    }
+                }
+            }
+
+            /** 左侧点击某个栏目：记住选中项并刷新（-1 = 已完成） */
+            ACTION_SELECT_GROUP -> {
+                val widgetId = intent.getIntExtra(EXTRA_WIDGET_ID, -1)
+                if (widgetId < 0) return
+                val groupId = intent.getLongExtra(EXTRA_GROUP_ID, 0L)
+                WidgetUpdater.setSelectedGroup(appContext, widgetId, groupId)
+                val pending = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        WidgetUpdater.refreshWidget(appContext, widgetId)
+                    } catch (t: Throwable) {
+                        Log.e("WidgetAction", "切换栏目失败", t)
                     } finally {
                         pending.finish()
                     }
@@ -104,6 +122,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
         }
 
         const val ACTION_COMPLETE = "com.remind.widget.ACTION_COMPLETE"
+        const val ACTION_SELECT_GROUP = "com.remind.widget.ACTION_SELECT_GROUP"
         const val ACTION_UNDO = "com.remind.widget.ACTION_UNDO"
         const val ACTION_TOGGLE_PAGE = "com.remind.widget.ACTION_TOGGLE_PAGE"
         const val ACTION_OPEN_APP = "com.remind.widget.ACTION_OPEN_APP"

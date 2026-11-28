@@ -59,7 +59,7 @@ class ReminderWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
-        appWidgetIds.forEach { WidgetUpdater.setPage(context, it, 0) }
+        appWidgetIds.forEach { WidgetUpdater.resetWidget(context, it) }
     }
 
     /** 第一个小组件被添加：重建闹钟，确保提醒是活的 */

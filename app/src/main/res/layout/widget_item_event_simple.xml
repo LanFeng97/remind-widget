@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  右侧事件行（窄版）：13:00  维生素D  ●
+  左右分栏后右侧只有约 200dp 宽，去掉「每天 / 每3天」这列规则文字，留给事件名。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ie_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp">
+
+    <TextView
+        android:id="@+id/ie_time"
+        android:layout_width="36dp"
+        android:layout_height="wrap_content"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:textColor="@color/w_text_sub"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:text="13:00" />
+
+    <TextView
+        android:id="@+id/ie_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="12.5sp"
+        android:textColor="@color/w_text"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="维生素D" />
+
+    <TextView
+        android:id="@+id/ie_dot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:textSize="12sp"
+        android:textColor="@color/w_dot_empty"
+        android:includeFontPadding="false"
+        android:text="○" />
+</LinearLayout>
