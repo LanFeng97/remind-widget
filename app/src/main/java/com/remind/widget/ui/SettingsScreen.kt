@@ -401,16 +401,34 @@ fun SettingsScreen(
                 }
             }
 
-            // 找不到组件时的手动引导——小米桌面经常不弹一键添加
+            // 找不到组件时的手动引导。
+            // 这段路径是在小米 17 / HyperOS 4.0 上一步步实测出来的，别改顺序：
+            //   HyperOS 把标准 Android 组件藏在「安卓小部件」分类里（列表最底部），
+            //   而且小部件面板顶部的搜索框只搜小米自家组件，搜「提醒」是搜不到的。
             item {
                 CardSurface {
                     Text("手动添加（一键添加没反应时用这个）", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(7.dp))
+                    Spacer(Modifier.height(8.dp))
+                    listOf(
+                        "在桌面空白处【双指捏合】（像缩小照片那样）",
+                        "点底部【小部件】",
+                        "点【全部应用】",
+                        "一直往下滚到最底部，点【安卓小部件】",
+                        "继续滚到最底，找到【提醒】，双击即可放到桌面"
+                    ).forEachIndexed { i, line ->
+                        Text(
+                            "${i + 1}. $line",
+                            fontSize = 11.5.sp,
+                            lineHeight = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(Modifier.height(9.dp))
                     Text(
-                        "长按桌面空白处 → 点「添加小部件 / 小组件」→ 在列表里找到「提醒」→ 长按拖到桌面。\n" +
-                            "如果列表里没有「提醒」：先在本页面点过一次上面的橙色按钮，再回桌面重新打开小组件列表。",
-                        fontSize = 11.5.sp,
-                        lineHeight = 18.sp,
+                        "注意：小部件面板顶部的搜索框搜不到「提醒」——HyperOS 只搜索小米自家组件，" +
+                            "标准 Android 组件不在这套索引里，必须从「安卓小部件」分类进去找。",
+                        fontSize = 11.sp,
+                        lineHeight = 17.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(9.dp))
@@ -457,7 +475,12 @@ fun SettingsScreen(
                             warn = diag.mineCount == 0
                         )
                         if (diag.mineCount > 0) {
-                            DiagLine("声明尺寸", "${diag.minW} × ${diag.minH} dp")
+                            // AppWidgetProviderInfo.minWidth 的单位是 px，要除以 density 换回 dp
+                            val d = ctx.resources.displayMetrics.density
+                            DiagLine(
+                                "声明尺寸",
+                                "${(diag.minW / d).toInt()} × ${(diag.minH / d).toInt()} dp"
+                            )
                         }
                         DiagLine("一键添加接口", if (diag.pinSupported) "支持" else "不支持")
                         Spacer(Modifier.height(7.dp))
