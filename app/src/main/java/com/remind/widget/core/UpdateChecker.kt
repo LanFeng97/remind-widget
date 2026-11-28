@@ -240,6 +240,19 @@ object UpdateChecker {
 
     // ---------------- 安装 ----------------
 
+    /**
+     * 清掉 files/update/ 下不属于当前版本的安装包。
+     * 升级成功后 App 进程会被杀掉，没法在下载流程里顺手删，所以放到下次冷启动做。
+     */
+    fun cleanupOldDownloads(context: Context) {
+        val dir = File(context.filesDir, "update")
+        if (!dir.isDirectory) return
+        val current = BuildConfig.VERSION_NAME
+        dir.listFiles()?.forEach { f ->
+            if (f.isFile && !f.name.contains(current)) f.delete()
+        }
+    }
+
     fun hasInstallPermission(context: Context): Boolean =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.packageManager.canRequestPackageInstalls()

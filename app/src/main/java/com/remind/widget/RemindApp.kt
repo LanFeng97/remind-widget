@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import com.remind.widget.core.AlarmScheduler
 import com.remind.widget.core.Notifier
+import com.remind.widget.core.UpdateChecker
 import com.remind.widget.data.ReminderRepository
 import com.remind.widget.widget.WidgetUpdater
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +22,9 @@ class RemindApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Notifier.ensureChannel(this)
+
+        // 清掉上次更新留在 files/update/ 的安装包（17MB 一份，不删会一直堆）
+        runCatching { UpdateChecker.cleanupOldDownloads(this) }
 
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             runCatching {

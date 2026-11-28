@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.remind.widget.core.DayPlan
@@ -360,7 +361,7 @@ private fun EventLine(
     }
 }
 
-/** 一行已处理（完成 / 忽略）：灰色，完成划删除线，右侧 ↺ 可撤销 */
+/** 一行已处理（完成 / 忽略）：灰色，完成划删除线，右侧显示处理时刻 + ↺ 可撤销 */
 @Composable
 private fun HandledLine(
     record: DoneRecord,
@@ -391,8 +392,17 @@ private fun HandledLine(
             fontSize = 13.5.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textDecoration = if (record.ignored) null else TextDecoration.LineThrough,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
+        // 被完成 / 被忽略的时刻（和已完成列表页保持一致）
+        Text(
+            hhmmOf(record.doneAt),
+            fontSize = 10.5.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
+        )
+        Spacer(Modifier.width(2.dp))
         Box(
             Modifier
                 .size(30.dp)
@@ -407,6 +417,14 @@ private fun HandledLine(
             )
         }
     }
+}
+
+/** 时间戳 → HH:mm */
+private fun hhmmOf(epochMs: Long): String {
+    val t = java.time.Instant.ofEpochMilli(epochMs)
+        .atZone(java.time.ZoneId.systemDefault())
+        .toLocalTime()
+    return "%02d:%02d".format(t.hour, t.minute)
 }
 
 @Composable
