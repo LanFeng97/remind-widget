@@ -159,6 +159,21 @@ object WidgetUpdater {
 
         val views = RemoteViews(context.packageName, R.layout.widget_main)
 
+        // 各品牌桌面的组件宽度差异很大（小屏 4 列可能只有 280dp，大屏能到 380dp），
+        // 左侧栏目宽度按比例算，避免窄屏挤成两字换行 / 宽屏留白过多（API 31+ 才支持动态设宽）
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val opts = mgr.getAppWidgetOptions(widgetId)
+            val widthDp = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
+            if (widthDp > 0) {
+                val leftDp = (widthDp * 0.24f).toInt().coerceIn(64, 96)
+                views.setViewLayoutWidth(
+                    R.id.w_group_list,
+                    leftDp.toFloat(),
+                    android.util.TypedValue.COMPLEX_UNIT_DIP
+                )
+            }
+        }
+
         // 两个列表各自的适配器（data 必须不同，否则 Intent 会被合并）
         val groupIntent = Intent(context, WidgetListService::class.java).apply {
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)

@@ -381,58 +381,82 @@ fun SettingsScreen(
                 }
             }
 
-            // ================= 小组件入口 =================
+            // ================= 添加桌面小组件（醒目引导） =================
+            // 一键添加（requestPinAppWidget）在 HyperOS 4.0 上是假接口：返回 true 但系统什么都不做。
+            // 所以这里把「手动步骤」提到最前面直接展示，按钮只作为可选尝试，并按品牌给不同路径。
             item {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(MaterialTheme.colorScheme.primary)
-                        .clickable { addWidgetToHome(ctx) }
-                        .padding(vertical = 14.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "把 4×2 小组件放到桌面",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
+                val mgr = AppWidgetManager.getInstance(ctx)
+                val widgetIds = remember(tick) {
+                    runCatching {
+                        mgr.getAppWidgetIds(
+                            ComponentName(ctx, ReminderWidgetProvider::class.java)
+                        )
+                    }.getOrDefault(IntArray(0))
                 }
-            }
+                val brand = remember { brandHint() }
+                val added = widgetIds.isNotEmpty()
 
-            // 找不到组件时的手动引导。
-            // 这段路径是在小米 17 / HyperOS 4.0 上一步步实测出来的，别改顺序：
-            //   HyperOS 把标准 Android 组件藏在「安卓小部件」分类里（列表最底部），
-            //   而且小部件面板顶部的搜索框只搜小米自家组件，搜「提醒」是搜不到的。
-            item {
                 CardSurface {
-                    Text("手动添加（一键添加没反应时用这个）", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(8.dp))
-                    listOf(
-                        "在桌面空白处【双指捏合】（像缩小照片那样）",
-                        "点底部【小部件】",
-                        "点【全部应用】",
-                        "一直往下滚到最底部，点【安卓小部件】",
-                        "继续滚到最底，找到【提醒】，双击即可放到桌面"
-                    ).forEachIndexed { i, line ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("添加桌面小组件", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.weight(1f))
+                        Pill(
+                            text = if (added) "已添加 ${widgetIds.size} 个" else "未添加",
+                            tint = if (added) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.error,
+                            background = if (added)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            else MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        brand.name,
+                        fontSize = 10.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "按这几步手动添加（最可靠）",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(6.dp))
+
+                    brand.steps.forEachIndexed { i, step ->
+                        Row(Modifier.padding(vertical = 1.5.dp)) {
+                            Text(
+                                "${i + 1}.",
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.width(18.dp)
+                            )
+                            Text(
+                                step,
+                                fontSize = 12.5.sp,
+                                lineHeight = 19.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
+                    if (brand.note != null) {
+                        Spacer(Modifier.height(9.dp))
                         Text(
-                            "${i + 1}. $line",
-                            fontSize = 11.5.sp,
-                            lineHeight = 18.sp,
+                            brand.note,
+                            fontSize = 11.sp,
+                            lineHeight = 17.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Spacer(Modifier.height(9.dp))
-                    Text(
-                        "注意：小部件面板顶部的搜索框搜不到「提醒」——HyperOS 只搜索小米自家组件，" +
-                            "标准 Android 组件不在这套索引里，必须从「安卓小部件」分类进去找。",
-                        fontSize = 11.sp,
-                        lineHeight = 17.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(9.dp))
-                    SecondaryButton("打开系统桌面设置检查组件") {
+
+                    Spacer(Modifier.height(13.dp))
+                    PrimaryButton("尝试一键添加（部分桌面不支持）") { addWidgetToHome(ctx) }
+                    Spacer(Modifier.height(7.dp))
+                    SecondaryButton("打开桌面设置") {
                         runCatching {
                             ctx.startActivity(
                                 Intent(Settings.ACTION_HOME_SETTINGS)
@@ -574,17 +598,115 @@ private fun DiagLine(label: String, value: String, warn: Boolean = false) {
 // ---------------- 小组件添加 ----------------
 
 /**
- * 一键添加。小米 HyperOS 的桌面大多数版本**不支持** requestPinAppWidget，
- * 这时必须给出明确文案，否则用户点完毫无反馈（v1.0 的 bug）。
+ * 按品牌给出小部件入口路径。
+ * 各家 ROM 的入口差异极大：小米把标准 Android 组件收进「安卓小部件」二级分类，
+ * 其他品牌大多在长按桌面后的一级菜单里。猜错路径比不给路径更糟，所以这里分开写。
+ */
+private data class BrandHint(
+    val name: String,
+    val steps: List<String>,
+    val note: String? = null
+)
+
+private fun brandHint(): BrandHint {
+    val mfr = Build.MANUFACTURER.orEmpty()
+    val model = Build.MODEL.orEmpty()
+    val s = "$mfr ${Build.BRAND.orEmpty()}".lowercase()
+    val label = "已识别：$mfr $model"
+
+    return when {
+        s.contains("xiaomi") || s.contains("redmi") || s.contains("poco") || isMiuiRom() ->
+            BrandHint(
+                name = "$label（HyperOS / MIUI）",
+                steps = listOf(
+                    "在桌面空白处【双指捏合】（像缩小一张照片那样）",
+                    "点底部的【小部件】",
+                    "点【全部应用】",
+                    "一直往下滚到列表最底部，点【安卓小部件】",
+                    "继续滚到最底，找到【提醒】，双击即可放到桌面"
+                ),
+                note = "小米把标准 Android 组件收在「安卓小部件」这个二级分类里；" +
+                    "小部件面板顶部的搜索框只搜小米自家组件，搜「提醒」搜不到，必须从分类进去找。"
+            )
+
+        s.contains("samsung") -> BrandHint(
+            name = "$label（One UI）",
+            steps = listOf(
+                "长按桌面空白处",
+                "点底部【小组件】",
+                "在列表里找到【提醒】",
+                "按住拖到桌面"
+            )
+        )
+
+        s.contains("oppo") || s.contains("oneplus") || s.contains("realme") ->
+            BrandHint(
+                name = "$label（ColorOS）",
+                steps = listOf(
+                    "长按桌面空白处",
+                    "点【小部件】或【卡片】",
+                    "在列表里找到【提醒】",
+                    "点击或拖到桌面"
+                )
+            )
+
+        s.contains("vivo") || s.contains("iqoo") -> BrandHint(
+            name = "$label（OriginOS）",
+            steps = listOf(
+                "长按桌面空白处",
+                "点【原子组件】或【小部件】",
+                "找到【提醒】",
+                "拖到桌面"
+            )
+        )
+
+        s.contains("huawei") || s.contains("honor") -> BrandHint(
+            name = "$label（HarmonyOS / MagicOS）",
+            steps = listOf(
+                "长按桌面空白处",
+                "点【服务卡片】或【小组件】",
+                "找到【提醒】",
+                "添加"
+            ),
+            note = "部分鸿蒙机型对标准 Android 组件的支持有限。如果在所有分类里都找不到「提醒」，" +
+                "那就是系统层面的限制，不是安装问题。"
+        )
+
+        else -> BrandHint(
+            name = "$label",
+            steps = listOf(
+                "长按桌面空白处",
+                "选择【小部件 / 小组件 / Widgets】",
+                "在列表里找到【提醒】",
+                "拖到桌面，或点一下直接添加"
+            ),
+            note = "不同品牌的入口名称略有差别，找不到时可以在小部件面板里切到「按应用」视图。"
+        )
+    }
+}
+
+/** 小米 ROM 判断：MIUI/HyperOS 会填 ro.miui.ui.version.name，标准 Android 不会 */
+private fun isMiuiRom(): Boolean = try {
+    val cls = Class.forName("android.os.SystemProperties")
+    val getter = cls.getMethod("get", String::class.java)
+    val version = getter.invoke(null, "ro.miui.ui.version.name") as? String
+    version != null && version.isNotEmpty()
+} catch (t: Throwable) {
+    false
+}
+
+/**
+ * 一键添加。小米 HyperOS 的桌面大多**不支持** requestPinAppWidget，
+ * 这时必须给出明确文案，否则用户点完毫无反馈（这是 v1.0 的原始 bug）。
  */
 private fun addWidgetToHome(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-        toast(context, "这台手机太旧，请手动长按桌面添加")
+        toast(context, "这台手机系统太旧，不支持一键添加，请按上面的步骤手动添加")
         return
     }
     val mgr = AppWidgetManager.getInstance(context)
     if (!mgr.isRequestPinAppWidgetSupported) {
-        toast(context, "这台手机的桌面不支持一键添加，请长按桌面空白 → 小组件 → 找到「提醒」")
+        toast(context, "这台手机的桌面不支持一键添加，请按上面的步骤手动添加")
         return
     }
     val ok = runCatching {
@@ -594,12 +716,12 @@ private fun addWidgetToHome(context: Context) {
         )
     }.getOrDefault(false)
 
-    // 无论成败都给反馈：HyperOS 上「接口返回 true 但桌面什么都不弹」是常见情况，
-    // 静默会让人以为按钮坏了（v1.0 就是这个问题）。
+    // 无论成败都给反馈：HyperOS 上「接口返回 true 但桌面什么都不弹」是常态，
+    // 静默会让人以为按钮坏了（v1.0 的原始 bug）。
     toast(
         context,
-        if (ok) "已发出添加请求；若 3 秒内桌面没有弹出确认框，说明桌面忽略了它，请长按桌面空白手动添加"
-        else "系统拒绝了添加请求，请长按桌面空白 → 小组件 → 找到「提醒」"
+        if (ok) "已发出添加请求。如果桌面没有弹确认框，说明这台手机的桌面忽略了它，请按上面的步骤手动添加"
+        else "系统拒绝了添加请求，请按上面的步骤手动添加"
     )
 }
 
