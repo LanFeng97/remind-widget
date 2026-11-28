@@ -80,7 +80,9 @@ fun AppRoot(initialGroupId: Long = -1L) {
                     onCreated()
                 }
             },
-            onComplete = vm::complete
+            onComplete = vm::complete,
+            onIgnore = vm::ignore,
+            onUndo = vm::undo
         )
 
         is Screen.Edit -> {

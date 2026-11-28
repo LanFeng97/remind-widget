@@ -19,10 +19,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -66,7 +68,9 @@ fun HomeScreen(
     onOpenGroup: (Long) -> Unit,
     onOpenSettings: () -> Unit,
     onCreateGroup: (String, Long, () -> Unit) -> Unit,
-    onComplete: (Long) -> Unit
+    onComplete: (Long) -> Unit,
+    onIgnore: (Long) -> Unit,
+    onUndo: (Long) -> Unit
 ) {
     val now = rememberNow()
     val blocks = remember(groups, events, doneToday, now) {
@@ -146,9 +150,12 @@ fun HomeScreen(
                             modifier = Modifier.animateItem(),
                             block = block,
                             allEvents = events.filter { it.groupId == block.group.id },
+                            doneToday = doneToday.filter { it.groupId == block.group.id },
                             now = now,
                             onClick = { onOpenGroup(block.group.id) },
-                            onComplete = onComplete
+                            onComplete = onComplete,
+                            onIgnore = onIgnore,
+                            onUndo = onUndo
                         )
                     }
                 }
@@ -187,14 +194,18 @@ private fun GroupCard(
     modifier: Modifier = Modifier,
     block: DayPlan.Block,
     allEvents: List<Event>,
+    doneToday: List<DoneRecord>,
     now: LocalDateTime,
     onClick: () -> Unit,
-    onComplete: (Long) -> Unit
+    onComplete: (Long) -> Unit,
+    onIgnore: (Long) -> Unit,
+    onUndo: (Long) -> Unit
 ) {
     val group = block.group
     val color = Color(group.color)
     val due = block.dueCount > 0
     val idleCount = allEvents.count { Schedule.triggerOn(it, now.toLocalDate()) == null }
+    val handled = doneToday.sortedBy { it.dueKey }
 
     CardSurface(
         modifier = modifier.clickable(onClick = onClick)
@@ -214,38 +225,46 @@ private fun GroupCard(
                 Pill(
                     when {
                         block.pending.isNotEmpty() -> "${block.pending.size} 个待办"
-                        block.allDone -> "今天已完成"
+                        handled.isNotEmpty() -> "今天已完成"
                         else -> "今天无安排"
                     }
                 )
             }
         }
 
+        // 待办：点整行=完成，点右侧 ⊘=忽略
         if (block.pending.isNotEmpty()) {
             Spacer(Modifier.height(9.dp))
-            block.pending.take(3).forEach { ev ->
+            block.pending.take(5).forEach { ev ->
                 EventLine(
                     event = ev,
                     now = now,
                     dotColor = color,
-                    onComplete = { onComplete(ev.id) }
+                    onComplete = { onComplete(ev.id) },
+                    onIgnore = { onIgnore(ev.id) }
                 )
             }
-            if (block.pending.size > 3) {
+            if (block.pending.size > 5) {
                 Spacer(Modifier.height(5.dp))
                 Text(
-                    "还有 ${block.pending.size - 3} 个事件",
+                    "还有 ${block.pending.size - 5} 个事件",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        } else if (block.allDone) {
-            Spacer(Modifier.height(7.dp))
-            Text(
-                "今天已全部完成",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        }
+
+        // 已处理（完成 / 忽略）沉在卡片底部，灰色 + 删除线 + 撤销
+        if (handled.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
             )
+            Spacer(Modifier.height(4.dp))
+            handled.forEach { rec ->
+                HandledLine(record = rec, onUndo = { onUndo(rec.id) })
+            }
         }
 
         if (idleCount > 0) {
@@ -264,29 +283,25 @@ private fun GroupCard(
     }
 }
 
-/** 一行事件：点击 → 划线 620ms → 记账消失（与原型里定下来的节奏一致） */
+/**
+ * 一行待办：点整行 = 完成，点右侧 ⊘ = 忽略。
+ * 不再做"划线 620ms 后消失"——完成后会原地变成下面的 [HandledLine]，看得见、可撤销。
+ */
 @Composable
 private fun EventLine(
     event: Event,
     now: LocalDateTime,
     dotColor: Color,
-    onComplete: () -> Unit
+    onComplete: () -> Unit,
+    onIgnore: () -> Unit
 ) {
-    var ticking by remember(event.id) { mutableStateOf(false) }
     val due = Schedule.isDueNow(event, now)
-
-    if (ticking) {
-        LaunchedEffect(Unit) {
-            delay(620)
-            onComplete()
-        }
-    }
 
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-            .clickable(enabled = !ticking) { ticking = true }
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onComplete)
             .padding(vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -300,9 +315,7 @@ private fun EventLine(
         Text(
             event.name.ifBlank { "未命名事件" },
             fontSize = 14.sp,
-            color = if (ticking) MaterialTheme.colorScheme.onSurfaceVariant
-            else MaterialTheme.colorScheme.onSurface,
-            textDecoration = if (ticking) TextDecoration.LineThrough else null,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
         Text(
@@ -310,13 +323,70 @@ private fun EventLine(
             fontSize = 10.5.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(Modifier.width(8.dp))
+        // ⊘ 忽略：内层 clickable 会吃掉点击，不会误触发整行的"完成"
+        Box(
+            Modifier
+                .size(30.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onIgnore),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "⊘",
+                fontSize = 13.sp,
+                color = if (due) dotColor
+                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
+        }
+    }
+}
+
+/** 一行已处理（完成 / 忽略）：灰色，完成划删除线，右侧 ↺ 可撤销 */
+@Composable
+private fun HandledLine(
+    record: DoneRecord,
+    onUndo: () -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(
-            if (ticking) "✓" else "○",
-            fontSize = 14.sp,
+            if (record.ignored) "⊘" else "✓",
+            fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = if (ticking) dotColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+            color = if (record.ignored) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            else Color(record.color)
         )
+        Spacer(Modifier.width(7.dp))
+        Text(
+            record.dueKey.substringAfter(' ').take(5),
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.width(38.dp)
+        )
+        Text(
+            record.eventName,
+            fontSize = 13.5.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textDecoration = if (record.ignored) null else TextDecoration.LineThrough,
+            modifier = Modifier.weight(1f)
+        )
+        Box(
+            Modifier
+                .size(30.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onUndo),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "↺",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+        }
     }
 }
 

@@ -55,6 +55,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- 完成 ----------
     fun complete(eventId: Long) = viewModelScope.launch { repo.completeEvent(eventId) }
 
+    /** 忽略：今天这一次跳过，不算做过 */
+    fun ignore(eventId: Long) = viewModelScope.launch {
+        repo.completeEvent(eventId, ignored = true)
+    }
+
     fun undo(recordId: Long) = viewModelScope.launch { repo.undoComplete(recordId) }
 
     /** 立刻重建闹钟（权限刚被授予时手动触发一次） */
