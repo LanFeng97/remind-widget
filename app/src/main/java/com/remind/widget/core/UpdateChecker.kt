@@ -113,10 +113,26 @@ object UpdateChecker {
         }
     }
 
-    private fun humanize(e: Exception): String = when (e) {
-        is java.net.UnknownHostException -> "连不上 GitHub，检查网络或稍后再试"
-        is java.net.SocketTimeoutException -> "连接 GitHub 超时，稍后再试"
-        else -> e.message ?: e.javaClass.simpleName
+    /**
+     * 把网络异常翻译成用户能看懂的话。
+     * 国内网络访问 api.github.com 常见的几种失败都单独列了——不然只显示
+     * "SocketException" 之类，用户完全不知道是网络问题还是 App 坏了。
+     */
+    private fun humanize(e: Exception): String {
+        val name = e.javaClass.simpleName
+        return when {
+            e is java.net.UnknownHostException ->
+                "连不上 GitHub（域名解析失败）。检查网络，或换个网络/开代理再试"
+            e is java.net.SocketTimeoutException || name.contains("Timeout") ->
+                "连接 GitHub 超时。稍后再试，或换个网络"
+            e is java.net.ConnectException ->
+                "连不上 GitHub 服务器。检查网络，或换个网络/开代理再试"
+            e is javax.net.ssl.SSLException ->
+                "HTTPS 握手失败（网络可能被劫持或代理未生效）。换网络再试"
+            name.contains("Reset") || (e.message?.contains("reset", true) == true) ->
+                "连接被重置。这是国内访问 GitHub 的常见情况，开代理或换网络再试"
+            else -> "$name: ${e.message ?: "未知错误"}"
+        }
     }
 
     private fun httpGet(url: String): String {

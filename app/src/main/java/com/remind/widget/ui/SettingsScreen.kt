@@ -149,7 +149,7 @@ fun SettingsScreen(
                         is UpdateState.Idle -> {
                             TipText("点下面的按钮检查 GitHub 上有没有新版本。")
                             Spacer(Modifier.height(9.dp))
-                            PrimaryButton("检查更新") { vm.checkUpdate() }
+                            PrimaryButton("检查更新") { vm.checkUpdate(force = true) }
                         }
 
                         is UpdateState.Checking -> {
@@ -161,7 +161,7 @@ fun SettingsScreen(
                         is UpdateState.UpToDate -> {
                             TipText("已是最新版本 ✓")
                             Spacer(Modifier.height(9.dp))
-                            SecondaryButton("重新检查") { vm.checkUpdate() }
+                            SecondaryButton("重新检查") { vm.checkUpdate(force = true) }
                         }
 
                         is UpdateState.Available -> {
@@ -221,7 +221,22 @@ fun SettingsScreen(
                         is UpdateState.Failed -> {
                             TipText("检查失败：${s.message}")
                             Spacer(Modifier.height(9.dp))
-                            SecondaryButton("重试") { vm.checkUpdate() }
+                            SecondaryButton("重试") { vm.checkUpdate(force = true) }
+                            Spacer(Modifier.height(7.dp))
+                            // 兜底：API 被墙时至少还能去浏览器手动下载
+                            SecondaryButton("在浏览器打开 Releases 页面") {
+                                runCatching {
+                                    ctx.startActivity(
+                                        Intent(
+                                            Intent.ACTION_VIEW,
+                                            Uri.parse(
+                                                "https://github.com/${BuildConfig.REPO_OWNER}/" +
+                                                    "${BuildConfig.REPO_NAME}/releases/latest"
+                                            )
+                                        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
