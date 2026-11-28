@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  右侧的待办事件行：13:00  维生素D        ⊘
+  两个可点区域（RemoteViews 里可以给不同子 View 分别设 fillInIntent，
+  但要靠 extras 里的 op 字段区分，因为同一个 ListView 只有一个 template action）：
+    · 整行   → op=complete
+    · ⊘ 按钮 → op=ignore
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ie_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp">
+
+    <TextView
+        android:id="@+id/ie_time"
+        android:layout_width="36dp"
+        android:layout_height="wrap_content"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:textColor="@color/w_text_sub"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:text="13:00" />
+
+    <TextView
+        android:id="@+id/ie_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="12.5sp"
+        android:textColor="@color/w_text"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="维生素D" />
+
+    <!-- 忽略按钮：点它表示"这次跳过"，不移除计划 -->
+    <TextView
+        android:id="@+id/ie_ignore"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:layout_marginStart="2dp"
+        android:gravity="center"
+        android:textSize="13sp"
+        android:textColor="@color/w_dot_empty"
+        android:includeFontPadding="false"
+        android:text="⊘" />
+</LinearLayout>

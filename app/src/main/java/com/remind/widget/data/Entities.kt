@@ -66,7 +66,8 @@ data class Event(
 )
 
 /**
- * 完成记录：点一下小组件里的事件就往这里写一条。
+ * 处理记录：点一下小组件里的事件就往这里写一条。
+ * 完成和忽略都记在这里，用 [ignored] 区分 —— 两者语义相同：今天这一次不再出现在待办里。
  * eventName / groupName / color 是快照，事件被删掉后历史仍然可读。
  */
 @Entity(tableName = "done_records", indices = [Index("dayKey"), Index("eventId")])
@@ -82,7 +83,9 @@ data class DoneRecord(
     /** 这一次完成对应的是哪个计划触发时刻（yyyy-MM-dd HH:mm），用于判定"今天这次是否已做" */
     val dueKey: String,
     /** yyyy-MM-dd，方便按天查询 */
-    val dayKey: String
+    val dayKey: String,
+    /** true = 被忽略（不是真做了，只是这次跳过），小组件里显示成灰色⊘ */
+    val ignored: Boolean = false
 )
 
 /** 小组件一层里的一行：可能是"栏目头"，也可能是"事件行" */
@@ -120,7 +123,18 @@ sealed class WidgetRow {
         override val key = "d-$recordId"
     }
 
-    /** 已完成页的标题行 */
+    /** 已完成 / 已忽略的事件行：沉在本栏目列表最下面，灰色显示 */
+    data class HandledRow(
+        val recordId: Long,
+        val name: String,
+        val timeText: String,
+        val color: Long,
+        val ignored: Boolean
+    ) : WidgetRow() {
+        override val key = "hd-$recordId"
+    }
+
+    /** 已废弃：左侧不再有「已完成」入口，保留类型只是为了不破坏旧包发出的 PendingIntent */
     data class DoneHeader(val count: Int) : WidgetRow() {
         override val key = "dh"
     }
@@ -134,16 +148,10 @@ sealed class WidgetRow {
         val name: String,
         val color: Long,
         val dueCount: Int,
-        val selected: Boolean
+        val selected: Boolean,
+        /** 这个栏目今天还剩几条没处理（含未到点的），用于右上角进度 */
+        val pendingCount: Int = 0
     ) : WidgetRow() {
         override val key = "gt-$groupId"
-    }
-
-    /** 左侧的「已完成」入口，永远排在栏目下面 */
-    data class DoneTab(
-        val count: Int,
-        val selected: Boolean
-    ) : WidgetRow() {
-        override val key = "gt-done"
     }
 }

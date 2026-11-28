@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  已处理的事件行（沉在所属栏目列表最下面，灰色）：
+    · 完成：✓ 13:00 维生素D（删除线）
+    · 忽略：⊘ 19:00 钙片（不划删除线，因为没做）
+  点击不做任何动作 —— 撤销统一在 App 里做，避免桌面误触。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ih_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp">
+
+    <TextView
+        android:id="@+id/ih_mark"
+        android:layout_width="16dp"
+        android:layout_height="wrap_content"
+        android:textSize="11sp"
+        android:textColor="@color/w_text_weak"
+        android:includeFontPadding="false"
+        android:text="✓" />
+
+    <TextView
+        android:id="@+id/ih_time"
+        android:layout_width="36dp"
+        android:layout_height="wrap_content"
+        android:textSize="10sp"
+        android:textColor="@color/w_text_weak"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:text="13:00" />
+
+    <TextView
+        android:id="@+id/ih_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="12.5sp"
+        android:textColor="@color/w_text_weak"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="维生素D" />
+</LinearLayout>

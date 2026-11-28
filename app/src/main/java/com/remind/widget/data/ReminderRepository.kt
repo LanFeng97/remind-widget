@@ -91,17 +91,19 @@ class ReminderRepository private constructor(
 
     // ---------- 完成 / 撤销 ----------
     /**
-     * 标记完成。返回 true 表示这次真的写入了一条记录（重复点击返回 false）。
-     * 一次性事件完成后自动停用，避免它继续占着闹钟。
+     * 处理一次事件：完成（ignored=false）或忽略（ignored=true）。
+     * 两者的效果相同——今天这一次不再出现在待办里，只是展示上区分。
+     * 返回 true 表示这次真的写入了一条记录（重复点击返回 false）。
+     * 一次性事件处理后自动停用，避免它继续占着闹钟。
      */
-    suspend fun completeEvent(eventId: Long): Boolean {
+    suspend fun completeEvent(eventId: Long, ignored: Boolean = false): Boolean {
         val ev = eventDao.byId(eventId) ?: return false
         val group = groupDao.byId(ev.groupId) ?: return false
         val now = LocalDateTime.now()
         val dueKey = Schedule.todayDueKey(ev, now) ?: Schedule.dueKey(ev, now.toLocalDate())
 
         if (doneDao.dueKeysOf(eventId).contains(dueKey)) {
-            // 已经点过一次了，不重复记账
+            // 已经处理过一次了（不管是完成还是忽略），不重复记账
             return false
         }
 
@@ -114,7 +116,8 @@ class ReminderRepository private constructor(
                 color = group.color,
                 doneAt = System.currentTimeMillis(),
                 dueKey = dueKey,
-                dayKey = now.toLocalDate().toString()
+                dayKey = now.toLocalDate().toString(),
+                ignored = ignored
             )
         )
 

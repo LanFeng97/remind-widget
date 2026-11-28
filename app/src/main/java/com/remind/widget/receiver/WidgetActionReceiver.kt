@@ -25,6 +25,28 @@ class WidgetActionReceiver : BroadcastReceiver() {
         val appContext = context.applicationContext
 
         when (action) {
+            /**
+             * 右侧事件行的统一入口。
+             * 同一个 ListView 只有一个 template action，所以「完成」和「忽略」
+             * 靠 fillInIntent 里的 op 字段区分。
+             */
+            ACTION_ITEM_CLICK -> {
+                val eventId = intent.getLongExtra(EXTRA_EVENT_ID, -1L)
+                if (eventId <= 0) return
+                val ignored = intent.getStringExtra(EXTRA_OP) == OP_IGNORE
+                val pending = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val ok = ReminderRepository.get(appContext).completeEvent(eventId, ignored)
+                        if (ok) Notifier.cancel(appContext, eventId)
+                    } catch (t: Throwable) {
+                        Log.e("WidgetAction", "处理失败 event=$eventId ignored=$ignored", t)
+                    } finally {
+                        pending.finish()
+                    }
+                }
+            }
+
             ACTION_COMPLETE -> {
                 val eventId = intent.getLongExtra(EXTRA_EVENT_ID, -1L)
                 if (eventId <= 0) {
@@ -122,7 +144,13 @@ class WidgetActionReceiver : BroadcastReceiver() {
         }
 
         const val ACTION_COMPLETE = "com.remind.widget.ACTION_COMPLETE"
+        const val ACTION_ITEM_CLICK = "com.remind.widget.ACTION_ITEM_CLICK"
         const val ACTION_SELECT_GROUP = "com.remind.widget.ACTION_SELECT_GROUP"
+
+        /** ACTION_ITEM_CLICK 的操作类型 */
+        const val OP_COMPLETE = "complete"
+        const val OP_IGNORE = "ignore"
+        const val EXTRA_OP = "op"
         const val ACTION_UNDO = "com.remind.widget.ACTION_UNDO"
         const val ACTION_TOGGLE_PAGE = "com.remind.widget.ACTION_TOGGLE_PAGE"
         const val ACTION_OPEN_APP = "com.remind.widget.ACTION_OPEN_APP"
