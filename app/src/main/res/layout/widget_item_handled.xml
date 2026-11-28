@@ -44,4 +44,16 @@
         android:maxLines="1"
         android:ellipsize="end"
         android:text="维生素D" />
+
+    <!-- 撤销：点它把这一条退回待办，不用回 App -->
+    <TextView
+        android:id="@+id/ih_undo"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:layout_marginStart="2dp"
+        android:gravity="center"
+        android:textSize="13sp"
+        android:textColor="@color/w_text_weak"
+        android:includeFontPadding="false"
+        android:text="↺" />
 </LinearLayout>

@@ -31,10 +31,29 @@ class WidgetActionReceiver : BroadcastReceiver() {
              * 靠 fillInIntent 里的 op 字段区分。
              */
             ACTION_ITEM_CLICK -> {
-                val eventId = intent.getLongExtra(EXTRA_EVENT_ID, -1L)
-                if (eventId <= 0) return
-                val ignored = intent.getStringExtra(EXTRA_OP) == OP_IGNORE
+                val op = intent.getStringExtra(EXTRA_OP)
                 val pending = goAsync()
+
+                // 撤销：已处理行右侧的 ↺，把记录删掉后该事件会回到待办
+                if (op == OP_UNDO) {
+                    val recordId = intent.getLongExtra(EXTRA_RECORD_ID, -1L)
+                    if (recordId <= 0) { pending.finish(); return }
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            ReminderRepository.get(appContext).undoComplete(recordId)
+                        } catch (t: Throwable) {
+                            Log.e("WidgetAction", "撤销失败 record=$recordId", t)
+                        } finally {
+                            pending.finish()
+                        }
+                    }
+                    return
+                }
+
+                // 完成 / 忽略
+                val eventId = intent.getLongExtra(EXTRA_EVENT_ID, -1L)
+                if (eventId <= 0) { pending.finish(); return }
+                val ignored = op == OP_IGNORE
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         val ok = ReminderRepository.get(appContext).completeEvent(eventId, ignored)
@@ -150,6 +169,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
         /** ACTION_ITEM_CLICK 的操作类型 */
         const val OP_COMPLETE = "complete"
         const val OP_IGNORE = "ignore"
+        const val OP_UNDO = "undo"
         const val EXTRA_OP = "op"
         const val ACTION_UNDO = "com.remind.widget.ACTION_UNDO"
         const val ACTION_TOGGLE_PAGE = "com.remind.widget.ACTION_TOGGLE_PAGE"

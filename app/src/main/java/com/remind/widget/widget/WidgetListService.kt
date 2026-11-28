@@ -147,7 +147,12 @@ class WidgetListService : RemoteViewsService() {
             }
             rv.setInt(R.id.ih_name, "setPaintFlags", flags)
 
-            // 已处理行不做点击动作：撤销统一在 App 里，避免桌面误触
+            // 撤销按钮：把这条退回待办（不用回 App）
+            val undoFill = Intent().apply {
+                putExtra(WidgetActionReceiver.EXTRA_RECORD_ID, row.recordId)
+                putExtra(WidgetActionReceiver.EXTRA_OP, WidgetActionReceiver.OP_UNDO)
+            }
+            rv.setOnClickFillInIntent(R.id.ih_undo, undoFill)
             return rv
         }
 
