@@ -33,6 +33,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val doneToday: StateFlow<List<DoneRecord>> = repo.doneTodayFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** 全部处理记录（完成 + 忽略），已完成列表页用 */
+    val allDone: StateFlow<List<DoneRecord>> = repo.allDoneFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     // ---------- 栏目 ----------
     fun createGroup(name: String, color: Long, onCreated: (Long) -> Unit = {}) {
         viewModelScope.launch {

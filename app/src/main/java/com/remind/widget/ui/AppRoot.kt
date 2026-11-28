@@ -17,11 +17,12 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 
-/** 只有三个界面，用一个 sealed 状态切换就够，不引 Navigation 库 */
+/** 四个界面，用一个 sealed 状态切换就够，不引 Navigation 库 */
 sealed interface Screen {
     data object Home : Screen
     data class Edit(val groupId: Long) : Screen
     data object Settings : Screen
+    data object DoneHistory : Screen
 }
 
 @Composable
@@ -30,6 +31,7 @@ fun AppRoot(initialGroupId: Long = -1L) {
     val groups by vm.groups.collectAsStateWithLifecycle()
     val events by vm.events.collectAsStateWithLifecycle()
     val doneToday by vm.doneToday.collectAsStateWithLifecycle()
+    val allDone by vm.allDone.collectAsStateWithLifecycle()
 
     var screen by remember { mutableStateOf<Screen>(Screen.Home) }
 
@@ -74,6 +76,7 @@ fun AppRoot(initialGroupId: Long = -1L) {
             hasUpdate = updateState is UpdateState.Available,
             onOpenGroup = { screen = Screen.Edit(it) },
             onOpenSettings = { screen = Screen.Settings },
+            onOpenDoneHistory = { screen = Screen.DoneHistory },
             onCreateGroup = { name, color, onCreated ->
                 vm.createGroup(name, color) { id ->
                     screen = Screen.Edit(id)
@@ -109,6 +112,13 @@ fun AppRoot(initialGroupId: Long = -1L) {
             groups = groups,
             doneToday = doneToday,
             onBack = { screen = Screen.Home }
+        )
+
+        is Screen.DoneHistory -> DoneHistoryScreen(
+            groups = groups,
+            records = allDone,
+            onBack = { screen = Screen.Home },
+            onUndo = vm::undo
         )
     }
 }

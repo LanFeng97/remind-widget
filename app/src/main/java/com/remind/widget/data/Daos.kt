@@ -66,6 +66,10 @@ interface DoneDao {
     @Query("SELECT * FROM done_records WHERE dayKey = :day ORDER BY doneAt ASC")
     fun observeByDay(day: String): Flow<List<DoneRecord>>
 
+    /** 全部历史（已完成列表页用） */
+    @Query("SELECT * FROM done_records ORDER BY doneAt DESC")
+    fun observeAll(): Flow<List<DoneRecord>>
+
     @Query("SELECT * FROM done_records ORDER BY doneAt DESC LIMIT :limit")
     suspend fun recent(limit: Int): List<DoneRecord>
 

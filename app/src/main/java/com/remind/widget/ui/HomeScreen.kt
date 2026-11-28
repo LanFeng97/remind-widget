@@ -67,6 +67,7 @@ fun HomeScreen(
     hasUpdate: Boolean,
     onOpenGroup: (Long) -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenDoneHistory: () -> Unit,
     onCreateGroup: (String, Long, () -> Unit) -> Unit,
     onComplete: (Long) -> Unit,
     onIgnore: (Long) -> Unit,
@@ -96,11 +97,29 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text(
-                        "提醒",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                    // 标题 + 已完成列表入口（挨着标题放，不进设置）
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "提醒",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Box(
+                            Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                .clickable(onClick = onOpenDoneHistory)
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                "已完成列表",
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                     Spacer(Modifier.height(3.dp))
                     Text(
                         buildString {

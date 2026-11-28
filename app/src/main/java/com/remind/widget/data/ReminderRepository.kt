@@ -34,6 +34,9 @@ class ReminderRepository private constructor(
     fun doneTodayFlow(): Flow<List<DoneRecord>> =
         doneDao.observeByDay(LocalDate.now().toString())
 
+    /** 全部历史记录（已完成列表页） */
+    val allDoneFlow: Flow<List<DoneRecord>> = doneDao.observeAll()
+
     // ---------- 读 ----------
     suspend fun groups(): List<Group> = groupDao.all()
 

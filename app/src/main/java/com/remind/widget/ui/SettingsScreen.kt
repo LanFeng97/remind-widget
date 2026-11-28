@@ -336,48 +336,17 @@ fun SettingsScreen(
                 }
             }
 
-            // ================= 今日完成 =================
-            item {
-                CardSurface {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("今日完成", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(Modifier.weight(1f))
-                        Text("${doneToday.size} 条", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                    if (doneToday.isNotEmpty()) {
-                        Spacer(Modifier.height(8.dp))
-                        doneToday.sortedByDescending { it.doneAt }.take(8).forEach { rec ->
-                            Row(
-                                Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("✓", fontSize = 11.5.sp, color = androidx.compose.ui.graphics.Color(rec.color))
-                                Spacer(Modifier.width(6.dp))
-                                Text(
-                                    "${rec.groupName} · ${rec.eventName}",
-                                    fontSize = 12.5.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                TextButton(onClick = { vm.undo(rec.id) }) {
-                                    Text("撤销", fontSize = 11.sp)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             // ================= 数据 =================
+            // 今日完成 / 历史记录的查看已移到首页标题旁的「已完成列表」入口
             item {
                 CardSurface {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("数据", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.weight(1f))
-                        Text("${groups.size} 个栏目", fontSize = 12.5.sp)
+                        Text("${groups.size} 个栏目 · 今日 ${doneToday.size} 条", fontSize = 12.5.sp)
                     }
                     Spacer(Modifier.height(6.dp))
-                    TipText("历史记录全部保留。桌面小组件的「已完成」页只显示当天条目。")
+                    TipText("历史记录全部保留，在首页标题旁的「已完成列表」里查看（可按提醒时间 / 栏目 / 完成时间排序）。")
                 }
             }
 
