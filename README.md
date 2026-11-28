@@ -176,4 +176,4 @@ App 只认 `releases/latest`，不需要改代码。
 
 ## License
 
-MIT
+[MIT](LICENSE) © LanFeng97
