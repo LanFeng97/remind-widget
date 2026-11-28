@@ -144,12 +144,12 @@ class WidgetListService : RemoteViewsService() {
 
             // 删除线：RemoteViews 的 setInt("setPaintFlags") 在 HyperOS 上实测不渲染，
             // 改用 SpannableString + StrikethroughSpan —— ParcelableSpan 可以跨进程传到桌面。
-            // 完成 → 时间和名称都划掉；忽略 → 不划（这件事并没有做）。
+            // 只划事件名称：时刻是事实，不是被划掉的内容。
             val strike = !row.ignored
-            rv.setTextViewText(R.id.ih_time, strikeSpan(row.timeText, strike))
+            rv.setTextViewText(R.id.ih_time, row.timeText)
             rv.setTextViewText(R.id.ih_name, strikeSpan(row.name, strike))
-            // 被完成 / 被忽略的时刻：不划删除线，它是事实而不是被划掉的内容
-            rv.setTextViewText(R.id.ih_done, row.doneTime)
+            // 处理时刻上下排列，冒号留在小时行尾（见 verticalTime）
+            rv.setTextViewText(R.id.ih_done, verticalTime(row.doneTime))
 
             // 兜底：再走一次反射设 paintFlags（部分 ROM 上 Spannable 会被 toString 化）
             val flags = if (strike) {
@@ -180,6 +180,13 @@ class WidgetListService : RemoteViewsService() {
                 )
             }
         }
+
+        /**
+         * "13:40" → "13:\n40" —— 时分上下排列，冒号留在小时那行末尾。
+         * 保留冒号是因为纯数字上下堆叠会被读成两个无关的数，不像时间。
+         */
+        private fun verticalTime(t: String): String =
+            if (t.length >= 5) "${t.substring(0, 2)}:\n${t.substring(3, 5)}" else t
 
         override fun getViewTypeCount(): Int = 3
 

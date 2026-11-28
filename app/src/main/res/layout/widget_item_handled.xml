@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   已处理的事件行（沉在所属栏目列表最下面，灰色）：
-    · 完成：✓ 13:00 维生素D  13:40 ↺   （名称划删除线）
-    · 忽略：⊘ 19:00 钙片     13:40 ↺   （不划删除线）
+    · 完成：✓ 13:00  维生素D̶      13:  ↺   （只有名称划删除线）
+    · 忽略：⊘ 19:00  钙片        13:  ↺
+                                  40
 
-  右侧内容区只有约 155dp，五列必须压到最紧：
-    mark 14dp + 提醒时刻 32dp + 名称(flex) + 处理时刻 26dp + 撤销 24dp
-  名称因此只剩约 59dp（4 个汉字），超长会省略号截断，这是 4×2 的硬约束。
+  布局取舍（4×2 右侧只有约 155dp，宽度比高度稀缺）：
+    · 提醒时刻保持横排（13:00），它是正常阅读的锚点，不该变形
+    · 只有「处理时刻」上下排列，省出约 12dp 给事件名
+    · 上下排列的冒号留在小时行尾（"13:" + 换行 + "40"），
+      否则纯数字上下堆叠会被当成两个无关的数
+    · 删除线只加在名称上：时刻是事实，不是被划掉的内容
+
+  宽度账：mark 14 + 提醒 32 + 名称(flex) + 处理 20 + 撤销 24 = 90dp
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/ih_root"
@@ -26,6 +32,7 @@
         android:includeFontPadding="false"
         android:text="✓" />
 
+    <!-- 提醒时刻：横排，不划删除线 -->
     <TextView
         android:id="@+id/ih_time"
         android:layout_width="32dp"
@@ -36,11 +43,13 @@
         android:maxLines="1"
         android:text="13:00" />
 
+    <!-- 事件名：只有这里划删除线（完成时） -->
     <TextView
         android:id="@+id/ih_name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_marginStart="4dp"
         android:textSize="12sp"
         android:textColor="@color/w_text_weak"
         android:includeFontPadding="false"
@@ -48,17 +57,18 @@
         android:ellipsize="end"
         android:text="维生素D" />
 
-    <!-- 被完成 / 被忽略的时刻 -->
+    <!-- 处理时刻：上下排列，冒号留在小时行尾，读起来才知道是时间 -->
     <TextView
         android:id="@+id/ih_done"
-        android:layout_width="26dp"
+        android:layout_width="20dp"
         android:layout_height="wrap_content"
         android:textSize="9sp"
         android:textColor="@color/w_text_weak"
         android:includeFontPadding="false"
-        android:maxLines="1"
-        android:gravity="end"
-        android:text="13:40" />
+        android:lineSpacingExtra="1dp"
+        android:maxLines="2"
+        android:gravity="center_horizontal"
+        android:text="13:&#10;40" />
 
     <!-- 撤销：点它把这一条退回待办，不用回 App -->
     <TextView
