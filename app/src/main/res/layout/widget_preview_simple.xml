@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  小组件预览用的极简静态布局（不是真渲染，只是给桌面画缩略图）。
+
+  为什么单独写一个：
+  v1.1.1 把 previewLayout 直接指向了 @layout/widget_main，
+  那里面有 ListView（集合视图）。Android 12+ 的桌面渲染预览走受限路径，
+  集合视图会让预览渲染失败，结果整条 provider 在 HyperOS 的小部件列表里被完全过滤掉。
+
+  这里只用 LinearLayout + TextView，静态文字，保证任何 ROM 都能渲染出缩略图。
+  实际运行时的布局仍然是 widget_main。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="9dp"
+    android:paddingBottom="9dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="2 项到点"
+            android:textSize="10sp"
+            android:textColor="#FF6A00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="已完成 ›"
+            android:textSize="9.5sp"
+            android:textColor="@color/w_text_sub" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingTop="5dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="● "
+            android:textSize="7sp"
+            android:textColor="#FF6A00"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="吃药"
+            android:textStyle="bold"
+            android:textSize="11.5sp"
+            android:textColor="@color/w_text" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:text="1 项到点"
+            android:textSize="9.5sp"
+            android:textColor="#FF6A00" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="13:00   维生素D            每天  ●"
+        android:textSize="12sp"
+        android:textColor="@color/w_text"
+        android:paddingTop="3dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="19:00   钙片                每天  ○"
+        android:textSize="12sp"
+        android:textColor="@color/w_text"
+        android:paddingTop="3dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingTop="6dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="● "
+            android:textSize="7sp"
+            android:textColor="#3D5AFE"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="健身"
+            android:textStyle="bold"
+            android:textSize="11.5sp"
+            android:textColor="@color/w_text" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:text="1 项"
+            android:textSize="9.5sp"
+            android:textColor="@color/w_text_sub" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="20:00   练胸              每 3 天  ○"
+        android:textSize="12sp"
+        android:textColor="@color/w_text"
+        android:paddingTop="3dp" />
+</LinearLayout>

@@ -2,22 +2,31 @@
 <!--
   4x2 小组件声明。
 
-  尺寸踩过的坑，记在这里避免以后再试错：
-   · Google 系的 Launcher 按老公式算格数：格数 ≈ (minWidth + 30) / 70，所以 4x2 = 250x110dp。
-     给到 160dp 高，Pixel 会排成 4x3（多出一格空白），不是我们要的 4x2。
-   · Android 12+ 的 targetCellWidth/targetCellHeight 才是精确格数声明，HyperOS / ColorOS 优先读它。
-     两套值一起给：老 ROM 走 dp 公式，新 ROM 走 targetCell。
-   · v1.0 在小米上"小部件列表里找不到"，最可能的原因是缺 previewImage ——
-     部分 ROM 只展示带预览图的三方组件。现在补上了。
+  === 尺寸与预览的三次试错，留档避免重复踩坑 ===
+
+  ① previewLayout 是个坑（v1.1.1 犯的错）
+     当时把 android:previewLayout 直接指向 @layout/widget_main，那个布局里有两个 ListView。
+     Android 12+ 的桌面渲染预览走的是受限路径，集合视图会让预览渲染失败，
+     结果整条 provider 在小米 HyperOS 的小部件列表里被**完全过滤掉**（搜「提醒」什么都搜不到）。
+     现在只保留 previewImage（一张静态 PNG，最古老也最兼容）。
+
+  ② 尺寸用 Google 官方的 4x2 标准值
+     minWidth=250dp / minHeight=110dp 对应 70dp/格公式下的 4x2，是 AOSP Launcher 的算法。
+     targetCellWidth/Height 给 Android 12+ 的桌面做精确格数声明（HyperOS / ColorOS 会优先读它）。
+     注意：把 minHeight 放大到 160dp 想让「大格子 ROM」也认，反而让 Pixel 桌面排成 4x3，不要这么做。
+
+  ③ minResizeWidth/Height 放开，让用户能缩到更小，不会因为「只能 4x2」被某些桌面隐藏
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="40dp"
     android:targetCellWidth="4"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/widget_main"
-    android:previewLayout="@layout/widget_main"
+    android:previewLayout="@layout/widget_preview_simple"
     android:previewImage="@drawable/widget_preview"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"

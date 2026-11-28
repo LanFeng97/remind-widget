@@ -425,6 +425,56 @@ fun SettingsScreen(
                 }
             }
 
+            // ================= 小组件诊断 =================
+            // 用来区分两种完全不同的病因：
+            //   A. 系统压根没注册 provider（安装包/manifest 问题）
+            //   B. 系统注册了但桌面不列出来（桌面侧过滤，只能改声明去迎合）
+            item {
+                val diag = remember(tick) {
+                    runCatching {
+                        val mgr = AppWidgetManager.getInstance(ctx)
+                        val all = mgr.installedProviders
+                        val mine = all.filter { it.provider.packageName == ctx.packageName }
+                        WidgetDiag(
+                            total = all.size,
+                            mineCount = mine.size,
+                            minW = mine.firstOrNull()?.minWidth ?: 0,
+                            minH = mine.firstOrNull()?.minHeight ?: 0,
+                            pinSupported = mgr.isRequestPinAppWidgetSupported
+                        )
+                    }.getOrNull()
+                }
+                CardSurface {
+                    Text("小组件诊断", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    if (diag == null) {
+                        TipText("读取失败，点下面刷新重试")
+                    } else {
+                        DiagLine("系统已注册的组件提供者", "${diag.total} 个")
+                        DiagLine(
+                            "本应用注册数",
+                            "${diag.mineCount} 个",
+                            warn = diag.mineCount == 0
+                        )
+                        if (diag.mineCount > 0) {
+                            DiagLine("声明尺寸", "${diag.minW} × ${diag.minH} dp")
+                        }
+                        DiagLine("一键添加接口", if (diag.pinSupported) "支持" else "不支持")
+                        Spacer(Modifier.height(7.dp))
+                        TipText(
+                            if (diag.mineCount == 0) {
+                                "系统没有识别到本应用的组件，说明安装包里的 provider 声明有问题，请把这个诊断结果发给我。"
+                            } else {
+                                "系统已识别到组件。如果桌面列表里仍然看不到「提醒」，那是桌面侧的过滤，" +
+                                    "请在小部件列表点右上角的筛选图标，切到「按应用」视图再看一次。"
+                            }
+                        )
+                    }
+                    Spacer(Modifier.height(9.dp))
+                    SecondaryButton("刷新诊断") { tick++ }
+                }
+            }
+
             item {
                 Box(
                     Modifier.fillMaxWidth().padding(top = 4.dp).clip(RoundedCornerShape(15.dp))
@@ -470,6 +520,34 @@ fun SettingsScreen(
     }
 }
 
+/** 诊断结果 */
+private data class WidgetDiag(
+    val total: Int,
+    val mineCount: Int,
+    val minW: Int,
+    val minH: Int,
+    val pinSupported: Boolean
+)
+
+@Composable
+private fun DiagLine(label: String, value: String, warn: Boolean = false) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        Text(
+            label,
+            fontSize = 11.5.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            value,
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (warn) MaterialTheme.colorScheme.error
+            else MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
 // ---------------- 小组件添加 ----------------
 
 /**
@@ -493,11 +571,13 @@ private fun addWidgetToHome(context: Context) {
         )
     }.getOrDefault(false)
 
-    if (ok) {
-        toast(context, "已请求添加，请在系统弹窗里点确认")
-    } else {
-        toast(context, "系统拒绝了请求，请长按桌面空白 → 小组件 → 找到「提醒」")
-    }
+    // 无论成败都给反馈：HyperOS 上「接口返回 true 但桌面什么都不弹」是常见情况，
+    // 静默会让人以为按钮坏了（v1.0 就是这个问题）。
+    toast(
+        context,
+        if (ok) "已发出添加请求；若 3 秒内桌面没有弹出确认框，说明桌面忽略了它，请长按桌面空白手动添加"
+        else "系统拒绝了添加请求，请长按桌面空白 → 小组件 → 找到「提醒」"
+    )
 }
 
 private fun openMiuiAutostart(context: Context) {
