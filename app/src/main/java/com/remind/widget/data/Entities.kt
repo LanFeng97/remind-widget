@@ -127,7 +127,10 @@ sealed class WidgetRow {
     data class HandledRow(
         val recordId: Long,
         val name: String,
+        /** 原本该提醒的时刻，如 13:00 */
         val timeText: String,
+        /** 实际被完成 / 被忽略的时刻，如 13:40 */
+        val doneTime: String,
         val color: Long,
         val ignored: Boolean
     ) : WidgetRow() {

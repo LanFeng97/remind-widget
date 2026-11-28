@@ -148,6 +148,8 @@ class WidgetListService : RemoteViewsService() {
             val strike = !row.ignored
             rv.setTextViewText(R.id.ih_time, strikeSpan(row.timeText, strike))
             rv.setTextViewText(R.id.ih_name, strikeSpan(row.name, strike))
+            // 被完成 / 被忽略的时刻：不划删除线，它是事实而不是被划掉的内容
+            rv.setTextViewText(R.id.ih_done, row.doneTime)
 
             // 兜底：再走一次反射设 paintFlags（部分 ROM 上 Spannable 会被 toString 化）
             val flags = if (strike) {

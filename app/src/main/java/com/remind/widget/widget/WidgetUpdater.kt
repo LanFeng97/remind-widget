@@ -131,6 +131,10 @@ object WidgetUpdater {
                         recordId = r.id,
                         name = r.eventName,
                         timeText = r.dueKey.substringAfter(' ').take(5),
+                        doneTime = java.time.Instant.ofEpochMilli(r.doneAt)
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalTime()
+                            .let { "%02d:%02d".format(it.hour, it.minute) },
                         color = r.color,
                         ignored = r.ignored
                     )
