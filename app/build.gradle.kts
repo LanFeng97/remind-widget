@@ -13,8 +13,8 @@ android {
         applicationId = "com.remind.widget"
         minSdk = 26          // Android 8.0：RemoteViews 集合视图 + java.time 原生可用
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.2.2"
+        versionCode = 9
+        versionName = "1.2.3"
         resourceConfigurations += listOf("zh", "en")
 
         // 更新检查读取的 GitHub 仓库（发布脚本会用同一对值）

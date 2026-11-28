@@ -134,16 +134,26 @@ class WidgetListService : RemoteViewsService() {
 
         private fun handledRowView(row: WidgetRow.HandledRow): RemoteViews {
             val rv = RemoteViews(context.packageName, R.layout.widget_item_handled)
-            rv.setTextViewText(R.id.ih_mark, if (row.ignored) "⊘" else "✓")
-            rv.setTextViewText(R.id.ih_time, row.timeText)
-            rv.setTextViewText(R.id.ih_name, row.name)
 
-            // 完成的划删除线；忽略的不划（因为这件事并没有做）。
-            // ListView 会复用 item view，两个分支都要显式设置 paintFlags，否则样式会串。
-            val flags = if (row.ignored) {
-                android.graphics.Paint.ANTI_ALIAS_FLAG
-            } else {
+            // 标记：完成用栏目色（醒目），忽略保持灰（表示"没做"）
+            rv.setTextViewText(R.id.ih_mark, if (row.ignored) "⊘" else "✓")
+            rv.setTextColor(
+                R.id.ih_mark,
+                if (row.ignored) c(R.color.w_text_weak) else row.color.toInt()
+            )
+
+            // 删除线：RemoteViews 的 setInt("setPaintFlags") 在 HyperOS 上实测不渲染，
+            // 改用 SpannableString + StrikethroughSpan —— ParcelableSpan 可以跨进程传到桌面。
+            // 完成 → 时间和名称都划掉；忽略 → 不划（这件事并没有做）。
+            val strike = !row.ignored
+            rv.setTextViewText(R.id.ih_time, strikeSpan(row.timeText, strike))
+            rv.setTextViewText(R.id.ih_name, strikeSpan(row.name, strike))
+
+            // 兜底：再走一次反射设 paintFlags（部分 ROM 上 Spannable 会被 toString 化）
+            val flags = if (strike) {
                 android.graphics.Paint.STRIKE_THRU_TEXT_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG
+            } else {
+                android.graphics.Paint.ANTI_ALIAS_FLAG
             }
             rv.setInt(R.id.ih_name, "setPaintFlags", flags)
 
@@ -154,6 +164,19 @@ class WidgetListService : RemoteViewsService() {
             }
             rv.setOnClickFillInIntent(R.id.ih_undo, undoFill)
             return rv
+        }
+
+        /** 需要划掉时返回带 StrikethroughSpan 的文本，否则原样返回 */
+        private fun strikeSpan(text: String, strike: Boolean): CharSequence {
+            if (!strike || text.isEmpty()) return text
+            return android.text.SpannableString(text).apply {
+                setSpan(
+                    android.text.style.StrikethroughSpan(),
+                    0,
+                    length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
         }
 
         override fun getViewTypeCount(): Int = 3
